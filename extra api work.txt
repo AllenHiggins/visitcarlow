@@ -1,0 +1,1034 @@
+extra API's
+
+
+POST
+
+# TAKES POST JSON FROM CLIENT
+# mark a reported comment as dealt with
+def reported_comment_attended_to(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    commentID = conn.escape_string(str(data['commentID']))
+    try:
+        # check if the reported comment is in the reportbadbehaviour table
+        _SQL = ('select id from reportbadbehaviour WHERE commentID = "' + commentID + '" and attendedTo= 0 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result is not 0:
+            _SQL = ('UPDATE reportbadbehaviour SET attendedTo = 1 WHERE commentID = ' + commentID)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'comment has been attended to'
+        else:
+            # no record found
+            msg = 'no report found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+	
+	
+# TAKES POST JSON FROM CLIENT
+# enable a category
+def unblock_category(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    catID = conn.escape_string(str(data['catID']))
+    try:
+        # check if the category is in the catagories table
+        _SQL = ('select id from catagories WHERE id = "' + catID + '" and active= 0 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result is not 0:
+            _SQL = ('UPDATE catagories SET active = 1 WHERE id = ' + catID)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'category enabled'
+        else:
+            # no record found
+            msg = 'no category found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+	
+	
+# TAKES POST JSON FROM CLIENT
+# disable a category
+def block_category(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    catID = conn.escape_string(str(data['catID']))
+    try:
+        # check if the category is in the catagories table
+        _SQL = ('select id from catagories WHERE id = "' + catID + '" and active= 1 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result is not 0:
+            _SQL = ('UPDATE catagories SET active = 0 WHERE id = ' + catID)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'category disabled'
+        else:
+            # no record found
+            msg = 'no category found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+	
+# TAKES POST JSON FROM CLIENT
+# enable a listing type as a sub category
+def unblock_list_type(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    typeID = conn.escape_string(str(data['typeID']))
+    try:
+        # check if the list type is in the listtype table
+        _SQL = ('select id from listtype WHERE id = "' + typeID + '" and active= 0 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result is not 0:
+            _SQL = ('UPDATE listtype SET active = 1 WHERE id = ' + typeID)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'list type enabled'
+        else:
+            # no record found
+            msg = 'no list type found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+	
+	
+
+# TAKES POST JSON FROM CLIENT
+# disable a listing type as a sub category
+def block_list_type(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    typeID = conn.escape_string(str(data['typeID']))
+    try:
+        # check if the list type is in the listtype table
+        _SQL = ('select id from listtype WHERE id = "' + typeID + '" and active= 1 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result is not 0:
+            _SQL = ('UPDATE listtype SET active = 0 WHERE id = ' + typeID)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'list type disabled'
+        else:
+            # no record found
+            msg = 'no list type found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+	
+	
+# TAKES POST JSON FROM CLIENT
+# create nearby links for a single listing
+def create_nearby_listing_link(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    list_id = conn.escape_string(str(data['listingID']))
+    relatedID = conn.escape_string(str(data['relatedID']))
+    try:
+        # check if listing and related listing are in the nearby table
+        _SQL = ('select id from nearby WHERE listingID = "' + list_id + '" and relatedListingID = "'+relatedID+'"')
+        result = a.execute(_SQL)
+        # if the row not was found
+        if result is 0:
+            # check if listing and related listing are in the listing table
+            _SQL = ('select id from listing WHERE id = "' + list_id + '" and active = 1')
+            result = a.execute(_SQL)
+            _SQL2 = ('select id from listing WHERE id = "' + relatedID + '" and active = 1')
+            result2 = a.execute(_SQL2)
+            # if the listing was found
+            if result is not 0 and result2 is not 0:
+                _SQL = ('INSERT INTO nearby(listingID,relatedListingID) VALUES ("'+list_id+'","'+relatedID+'")')
+                a.execute(_SQL)
+                conn.commit()
+                msg = 'link added'
+            else:
+                # the listing was not found
+                msg = 'no listing found'
+        else:
+            # the row was found
+            msg = 'link already exist'
+    except ValueError as v:
+        # sql query has an error or something went wrong
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+
+# TAKES POST JSON FROM CLIENT
+# update nearby links for a single listing
+def update_nearby_listing_link(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    list_id = conn.escape_string(str(data['listingID']))
+    relatedID = conn.escape_string(str(data['relatedID']))
+    linkID = conn.escape_string(str(data['linkID']))
+    try:
+        # check if link is in the nearby table
+        _SQL = ('select id from nearby WHERE id = "' + linkID + '" and active = 1')
+        result= a.execute(_SQL)
+        # if the row was found
+        if result is not 0:
+            # check if related listing are in the listing table
+            _SQL = ('select id from listing WHERE id = "' + relatedID + '" and active = 1')
+            result = a.execute(_SQL)
+            # check if listing is in the nearby table
+            _SQL2 = ('select id from nearby WHERE listingID = "' + list_id + '" and active = 1')
+            result2 = a.execute(_SQL2)
+            # if the listing was found
+            if result is not 0 and result2 is not 0:
+                # check if listing and related listing are in the nearby table
+                _SQL3 = (
+                'select id from nearby WHERE listingID = "' + list_id + '" and relatedListingID = "' + relatedID + '"')
+                result3 = a.execute(_SQL3)
+                # record dose not exist
+                if(result3 is 0):
+                    _SQL = ('UPDATE nearby SET relatedListingID="'+relatedID+'" WHERE id = "'+linkID+'"')
+                    a.execute(_SQL)
+                    conn.commit()
+                    msg = 'link updated'
+                else:
+                    # the row was found
+                    msg = 'link already exist'
+            else:
+                # the listing was not found
+                msg = 'no listing found'
+        else:
+            # the row was found
+            msg = 'no link found'
+    except ValueError as v:
+        # sql query has an error or something went wrong
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+
+# TAKES POST JSON FROM CLIENT
+# disable a nearby related listing for a listing
+def block_nearby_listing(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    linkID = conn.escape_string(str(data['linkID']))
+    try:
+        # check if the related listing is in the nearby table
+        _SQL = ('select id from nearby WHERE id = "' + linkID + '" and active= 1 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result is not 0:
+            _SQL = ('UPDATE nearby SET active = 0 WHERE id = ' + linkID)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'Related listing disabled'
+        else:
+            # no record found
+            msg = 'no listing found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+
+# TAKES POST JSON FROM CLIENT
+# enable a nearby related listing for a listing
+def unblock_nearby_listing(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    linkID = conn.escape_string(str(data['linkID']))
+    try:
+        # check if the related listing is in the nearby table
+        _SQL = ('select id from nearby WHERE id = "' + linkID + '" and active= 0 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result is not 0:
+            _SQL = ('UPDATE nearby SET active = 1 WHERE id = ' + linkID)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'Related listing enabled'
+        else:
+            # no record found
+            msg = 'no listing found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+	
+
+# TAKES POST JSON FROM CLIENT
+#add new list type
+def add_new_list_type(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    list_type = conn.escape_string(str(data['type']))
+    image = conn.escape_string(str(data['image']))
+    cat_id = conn.escape_string(str(data['catID']))
+    try:
+        # check if the list type is in the listtype table
+        _SQL = ('select id from listtype WHERE title = "' + list_type + '"')
+        result = a.execute(_SQL)
+        # if the row was not found
+        if result is 0:
+            _SQL = ('INSERT INTO listtype (title,image,catID) VALUES ("'+list_type+'","'+image+'","'+cat_id+'")')
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'New list title add'
+        else:
+            # the row was found
+            msg = 'title already exist'
+    except ValueError as v:
+        # sql query has an error or something went wrong
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+
+# TAKES POST JSON FROM CLIENT
+#add new category
+def add_new_category(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    category = conn.escape_string(str(data['category']))
+    image = conn.escape_string(str(data['image']))
+    try:
+        # check if category is in the catagories table
+        _SQL = ('select id from catagories WHERE title = "' + category +'"')
+        result = a.execute(_SQL)
+        # if the row was not found
+        if result is 0:
+            _SQL = ('INSERT INTO catagories (`title`, `image`) VALUES ("'+category+'","'+image+'")')
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'new category add'
+        else:
+            # the row was found
+            msg = 'title already exist'
+    except ValueError as v:
+        # sql query has an error or something went wrong
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+
+# TAKES POST JSON FROM CLIENT
+# update a single listing
+def update_listing(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    id = conn.escape_string(str(data['id']))
+    name = conn.escape_string(str(data['name']))
+    address = conn.escape_string(str(data['address']))
+    latitude = conn.escape_string(str(data['latitude']))
+    longitude = conn.escape_string(str(data['longitude']))
+    text = conn.escape_string(str(data['text']))
+    phone = conn.escape_string(str(data['phone']))
+    email = conn.escape_string(str(data['email']))
+    image = conn.escape_string(str(data['image']))
+    listTypeID = conn.escape_string(str(data['listTypeID']))
+    countyID = conn.escape_string(str(data['countyID']))
+    try:
+        # check if listing is in the listing table
+        _SQL = ('select id from listing WHERE id = "' + id + '"')
+        result = a.execute(_SQL)
+        # if the row was found
+        if result is not 0:
+            _SQL = ('UPDATE listing SET name="'+name+'",address="'+address+'",latitude="'+latitude+'",\
+            longitude="'+longitude+'",text="'+text+'",phone="'+phone+'",email="'+email+'",image="'+image+'",\
+            listTypeID="'+listTypeID+'",countyID="'+countyID+'" WHERE id = "'+id+'"')
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'listing updated'
+        else:
+            # the row was not found
+            msg = 'listing not found'
+    except ValueError as v:
+        # sql query has an error or something went wrong
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+
+# TAKES POST JSON FROM CLIENT
+# update media links for a single listing
+def update_media(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    list_id = conn.escape_string(str(data['listingID']))
+    instagram = conn.escape_string(str(data['instagram']))
+    twitter = conn.escape_string(str(data['twitter']))
+    website = conn.escape_string(str(data['website']))
+    facebook = conn.escape_string(str(data['facebook']))
+    try:
+        # check if listing is in the medialinks table
+        _SQL = ('select id from medialinks WHERE listingID = "' + list_id + '"')
+        result = a.execute(_SQL)
+        # if the row was found
+        if result is not 0:
+            _SQL = ('UPDATE medialinks SET website="'+website+'",facebook="'+facebook+'",twitter="'+twitter+'"\
+            ,instagram="'+instagram+'" WHERE listingID = "'+list_id+'"')
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'media links updated'
+        else:
+            # the row was not found
+            msg = 'not found'
+    except ValueError as v:
+        # sql query has an error or something went wrong
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+
+# TAKES POST JSON FROM CLIENT
+# create media links for a single listing
+def create_media(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    list_id = conn.escape_string(str(data['listingID']))
+    instagram = conn.escape_string(str(data['instagram']))
+    twitter = conn.escape_string(str(data['twitter']))
+    website = conn.escape_string(str(data['website']))
+    facebook = conn.escape_string(str(data['facebook']))
+    try:
+        # check if listing is in the medialinks table
+        _SQL = ('select id from medialinks WHERE listingID = "' + list_id + '"')
+        result = a.execute(_SQL)
+        # if the row not was found
+        if result is 0:
+            # check if listing is in the medialinks table
+            _SQL = ('select id from listing WHERE id = "' + list_id + '"')
+            result = a.execute(_SQL)
+            # if the listing was found
+            if result is not 0:
+                _SQL = ('INSERT INTO medialinks (listingID,website,facebook,twitter,instagram) VALUES\
+                 ("'+list_id+'","'+website+'","'+facebook+'","'+twitter+'","'+instagram+'")')
+                a.execute(_SQL)
+                conn.commit()
+                msg = 'media links added'
+            else:
+                # the listing was not found
+                msg = 'no listing found'
+        else:
+            # the row was found
+            msg = 'media links for listing already exist'
+    except ValueError as v:
+        # sql query has an error or something went wrong
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+	
+# TAKES POST JSON FROM CLIENT
+# un-mark a users comment and rating from deletion by setting active to one
+def unblock_comment_rating(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    cr_id = conn.escape_string(str(data['comment_rating_id']))
+    try:
+        # check if comment is in the commentrating table and is not active
+        _SQL = ('select id from commentrating WHERE id = "' + cr_id + '" and active= 0 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result > 0:
+            _SQL = ('UPDATE `commentrating` SET `active`= 1 WHERE id = '+cr_id)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'comment enabled'
+        else:
+            # no record found
+            msg = 'no comment found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+	
+
+# TAKES POST JSON FROM CLIENT
+# mark a users comment and rating for deletion or temp blocking by setting active to one
+def block_comment_rating(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    cr_id = conn.escape_string(str(data['comment_rating_id']))
+    try:
+        # check if comment is in the commentrating table and active is set to one
+        _SQL = ('select id from commentrating WHERE id = "' + cr_id + '" and active= 1 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result > 0:
+            _SQL = ('UPDATE `commentrating` SET `active`= 0 WHERE id = '+cr_id)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'comment blocked'
+        else:
+            # no record found
+            msg = 'no comment found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+
+
+
+# TAKES POST JSON FROM CLIENT
+# mark a listing for deletion or temp block
+def block_listing(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    list_id = conn.escape_string(str(data['list_id']))
+    try:
+        # check if listing is in the listing table and active is set to zero
+        _SQL = ('select id from listing WHERE id = "' + list_id + '" and active=1 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result > 0:
+            _SQL = ('UPDATE `listing` SET `active`= 0 WHERE id = '+list_id)
+            #query = conn.escape_string(_SQL) -- stop sql from working
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'listing blocked'
+        else:
+            # no record found
+            msg = 'no listing found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+
+# TAKES POST JSON FROM CLIENT
+# un-mark a listing from deletion or temp block
+def unblock_listing(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    list_id = conn.escape_string(str(data['list_id']))
+    try:
+        # check if listing is in the listing table and active is set to zero
+        _SQL = ('select id from listing WHERE id = "' + list_id + '" and active= 0 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result > 0:
+            _SQL = ('UPDATE `listing` SET `active`= 1 WHERE id = '+list_id)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'listing enabled'
+        else:
+            # no record found
+            msg = 'no listing found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+
+# TAKES POST JSON FROM CLIENT
+# mark a user for deletion
+def block_user(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    user_id = conn.escape_string(str(data['user_id']))
+    try:
+        # check if user is in the users table and active is set to zero
+        _SQL = ('select id from users WHERE id = "' + user_id + '" and active= 1 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result > 0:
+            _SQL = ('UPDATE `users` SET `active`= 0 WHERE id = '+user_id)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'user blocked'
+        else:
+            # no record found
+            msg = 'no user found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+
+# TAKES POST JSON FROM CLIENT
+# un-mark a user from deletion or temp blocking
+def unblock_user(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    user_id = conn.escape_string(str(data['user_id']))
+    try:
+        # check if user is in the users table and active is set to zero
+        _SQL = ('select id from users WHERE id = "' + user_id + '" and active= 0 ')
+        result = a.execute(_SQL)
+        # if row found
+        if result > 0:
+            _SQL = ('UPDATE `users` SET `active`= 1 WHERE id = '+user_id)
+            a.execute(_SQL)
+            conn.commit()
+            msg = 'user enabled'
+        else:
+            # no record found
+            msg = 'no user found'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+	
+# TAKES POST JSON FROM CLIENT
+# create a new listing to add to the database
+def create_listing(data):
+    conn = connect()
+    a = conn.cursor()
+    # avoid sql injection
+    list_type_id = conn.escape_string(str(data['list_type_id']))
+    county_id = conn.escape_string(str(data['county_id']))
+    name = conn.escape_string(str(data['name']))
+    address = conn.escape_string(str(data['address']))
+    latitude = conn.escape_string(str(data['latitude']))
+    longitude = conn.escape_string(str(data['longitude']))
+    text = conn.escape_string(str(data['text']))
+    phone = conn.escape_string(str(data['phone']))
+    email = conn.escape_string(str(data['email']))
+    image = conn.escape_string(str(data['image']))
+    try:
+        # check if listing is in the listing table and active is set to zero
+        _SQL1 = ('select name, address, phone,latitude,longitude,countyID from listing WHERE name = "'+name+'" and address = "'+address+'" and phone = "'
+                 +phone+'" and latitude = "'+latitude+'" and longitude = "'+longitude+'" and countyID = "'+county_id+'"')
+        result = a.execute(_SQL1)
+        # if listing is not already in the database
+        if result is 0:
+            _SQL = ('INSERT INTO listing (name,address,latitude,longitude,text,phone,email,image,listTypeID,\
+            countyID) VALUES ("'+name+'","'+address+'","'+latitude+'","'+longitude+'","'
+            +text+'","'+phone+'","'+email+'","'+image+'","'+list_type_id+'","'+county_id+'")')
+            a.execute(_SQL)
+            conn.commit()
+            a.execute('SELECT LAST_INSERT_ID()')
+            msg = a.fetchall()
+        else:
+            msg = 'not a valid request - listing may already exist'
+    except ValueError as v:
+        conn.rollback()
+        msg = 'fail'
+    a.close()
+    return msg
+
+GET
+
+
+# get (multiple) reported comments for a listing including comment and user
+# takes no argument in URL
+def get_reported_comments():
+    conn = connect()
+    a = conn.cursor()
+    try:
+        # get all reported comments for a listing
+        _SQL = ('SELECT reportbadbehaviour.id,reportbadbehaviour.commentID,reportbadbehaviour.dateOfReport,\
+        reportbadbehaviour.reportedAmount, commentrating.userID, commentrating.comment, users.userName,users.id\
+        from reportbadbehaviour inner join commentrating on reportbadbehaviour.commentID = commentrating.id\
+        inner join users on commentrating.userID = users.id\
+        WHERE reportbadbehaviour.attendedTo = 0')
+        a.execute(_SQL)
+        conn.commit()
+        data = a.fetchall()
+        d = []
+        for info in data:
+            d.append({
+                'id': info[0],
+                'listingID': info[1],
+                'dateOfReport': info[2],
+                'reportedAmount': info[3],
+                'comment': {
+                    'commentID': info[4],
+                    'text': info[5],
+                    'user': info[6],
+                    'userID': info[7]
+                }
+            })
+        data = d
+    except ValueError as v:
+        data = 'fail'
+    a.close()
+    return data
+
+	
+ENDPOINTS
+
+POST
+
+
+# comment attended to
+@app.route('/listing/comment/report/attended', methods=['POST'])
+def reported_comment_attended():
+    try:
+        data = {'commentID':  request.json['commentID']}
+    except:
+        return jsonify({'expecting': {'commentID': 'int'}}), 404
+    return jsonify({'result': app_request.reported_comment_attended_to(data)}), 202
+
+	
+
+# disable a category
+@app.route('/listing/category/disable', methods=['POST'])
+def disable_category():
+    try:
+        data = {'catID':  request.json['catID'] }
+    except:
+        return jsonify({'expecting': {'catID': 'int'}}), 404
+    return jsonify({'result': app_request.block_category(data)}), 202
+
+
+# enable a category
+@app.route('/listing/category/enable', methods=['POST'])
+def enable_category():
+    try:
+        data = {'catID':  request.json['catID'] }
+    except:
+        return jsonify({'expecting': {'catID': 'int'}}), 404
+    return jsonify({'result': app_request.unblock_category(data)}), 202
+
+
+
+
+# disable list type for sub category
+@app.route('/listing/type/disable', methods=['POST'])
+def disable_list_type():
+    try:
+        data = {'typeID':  request.json['typeID'] }
+    except:
+        return jsonify({'expecting': {'typeID': 'int'}}), 404
+    return jsonify({'result': app_request.block_list_type(data)}), 202
+
+
+# enable list type for sub category
+@app.route('/listing/type/enable', methods=['POST'])
+def enable_list_type():
+    try:
+        data = {'typeID':  request.json['typeID'] }
+    except:
+        return jsonify({'expecting': {'typeID': 'int'}}), 404
+    return jsonify({'result': app_request.unblock_list_type(data)}), 202
+	
+
+	
+# disable nearby links for a single listing
+@app.route('/listing/nearby/disable', methods=['POST'])
+def disable_nearby_link():
+    try:
+        data = {'linkID':  request.json['linkID'] }
+    except:
+        return jsonify({'expecting': {'linkID': 'int'}}), 404
+    return jsonify({'result': app_request.block_nearby_listing(data)}), 202
+
+
+# enable nearby links for a single listing
+@app.route('/listing/nearby/enable', methods=['POST'])
+def enable_nearby_link():
+    try:
+        data = {'linkID':  request.json['linkID'] }
+    except:
+        return jsonify({'expecting': {'linkID': 'int'}}), 404
+    return jsonify({'result': app_request.unblock_nearby_listing(data)}), 202
+
+
+
+
+# update nearby links for a single listing
+@app.route('/listing/nearby/edit', methods=['POST'])
+def update_nearby_link():
+    try:
+        data = {
+            'linkID':  request.json['linkID'],
+            'listingID': request.json['listingID'],
+            'relatedID': request.json['relatedID']
+        }
+    except:
+        return jsonify({'expecting': {
+            'linkID': 'int',
+            'listingID': 'int',
+            'relatedID': 'int'
+        }}), 404
+    return jsonify({'result': app_request.update_nearby_listing_link(data)}), 202
+
+
+
+# add a new listing type to listtype table
+@app.route('/listing/type/new', methods=['POST'])
+def add_a_new_type():
+    try:
+        data = {
+            'type': request.json['type'],
+            'image': request.json['image'],
+            'catID': request.json['catID']
+        }
+    except:
+        return jsonify({'expecting': {
+            'type': 'string',
+            'image': 'string',
+            'catID': 'int'
+        }}), 404
+    return jsonify({'result': app_request.add_new_list_type(data)}), 202
+
+
+# add a new category to the catagories table
+@app.route('/listing/category/new', methods=['POST'])
+def add_a_new_category():
+    try:
+        data = {
+            'category': request.json['category'],
+            'image': request.json['image']
+        }
+    except:
+        return jsonify({'expecting': {
+            'category': 'string',
+            'image': 'string',
+        }}), 404
+    return jsonify({'result': app_request.add_new_category(data)}), 202
+
+
+# update a single listing
+@app.route('/listing/details/edit', methods=['POST'])
+def update_listing_details():
+    try:
+        data = {
+            'id': request.json['id'],
+            'name': request.json['name'],
+            'address': request.json['address'],
+            'latitude': request.json['latitude'],
+            'longitude': request.json['longitude'],
+            'text': request.json['text'],
+            'phone': request.json['phone'],
+            'email': request.json['email'],
+            'image': request.json['image'],
+            'listTypeID': request.json['listTypeID'],
+            'countyID': request.json['countyID']
+        }
+    except:
+        return jsonify({'expecting': {
+            'id': 'int',
+            'name': 'string',
+            'address': 'string',
+            'latitude': 'string',
+            'longitude': 'string',
+            'text': 'string',
+            'phone': 'string',
+            'email': 'string',
+            'image': 'string',
+            'listTypeID': 'int',
+            'countyID': 'int'
+        }}), 404
+    return jsonify({'result': app_request.update_listing(data)}), 202
+
+
+# update media links for a single listing
+@app.route('/listing/media/details/edit', methods=['POST'])
+def update_media_details():
+    try:
+        data = {
+            'listingID': request.json['listingID'],
+            'instagram': request.json['instagram'],
+            'twitter': request.json['twitter'],
+            'website': request.json['website'],
+            'facebook': request.json['facebook'],
+        }
+    except:
+        return jsonify({'expecting': {
+            'listingID': 'int',
+            'instagram': 'string',
+            'twitter': 'string',
+            'website': 'string',
+            'facebook': 'string',
+        }}), 404
+    return jsonify({'result': app_request.update_media(data)}), 202
+
+
+# create media links for a single listing
+@app.route('/listing/media/add', methods=['POST'])
+def create_media_details():
+    try:
+        data = {
+            'listingID': request.json['listingID'],
+            'instagram': request.json['instagram'],
+            'twitter': request.json['twitter'],
+            'website': request.json['website'],
+            'facebook': request.json['facebook'],
+        }
+    except:
+        return jsonify({'expecting': {
+            'listingID': 'int',
+            'instagram': 'string',
+            'twitter': 'string',
+            'website': 'string',
+            'facebook': 'string',
+        }}), 404
+    return jsonify({'result': app_request.create_media(data)}), 202
+
+
+# create nearby links for a single listing
+@app.route('/listing/nearby/add', methods=['POST'])
+def create_nearby_link():
+    try:
+        data = {
+            'listingID': request.json['listingID'],
+            'relatedID': request.json['relatedID']
+        }
+    except:
+        return jsonify({'expecting': {
+            'listingID': 'int',
+            'relatedID': 'int'
+        }}), 404
+    return jsonify({'result': app_request.create_nearby_listing_link(data)}), 202
+
+	
+
+
+# disable a listing, blocking or marking it for deletion by setting active to zero - take JSON from client
+@app.route('/listing/disable', methods=['POST'])
+def disable_listing():
+    try:
+        data =  {'list_id': request.json['listID']}
+    except:
+        return jsonify({'expecting': {'listID': 'int'}}), 404
+    return jsonify({'result': app_request.block_listing(data)}), 202
+
+
+# enable a listing from blocking or mark for deletion by setting active to one - take JSON from client
+@app.route('/listing/enable', methods=['POST'])
+def enable_listing():
+    try:
+        data = {'list_id': request.json['listID']}
+    except:
+        return jsonify({'expecting': {'listID': 'int'}}), 404
+    return jsonify({'result': app_request.unblock_listing(data)}), 202
+
+
+# disable a user by setting active to zero - take JSON from client
+@app.route('/user/disable', methods=['POST'])
+def disable_user():
+    try:
+        data = {'user_id': request.json['userID']}
+    except:
+        return jsonify({'expecting': {'userID': 'int' }}), 404
+    return jsonify({'result': app_request.block_user(data)}), 202
+
+
+# enable a user by setting active to one - take JSON from client
+@app.route('/user/enable', methods=['POST'])
+def enable_user():
+    try:
+        data = {'user_id': request.json['userID']}
+    except:
+        return jsonify({'expecting': {'userID': 'int'}}), 404
+    return jsonify({'result': app_request.unblock_user(data)}), 202
+
+
+# disable a listing comment by setting active to zero - take JSON from client
+@app.route('/listing/comment/disable', methods=['POST'])
+def disable_comment_rating():
+    try:
+        data = {'comment_rating_id': request.json['id']}
+    except:
+        return jsonify({'expecting': {'id': 'int'}}), 404
+    return jsonify({'result': app_request.block_comment_rating(data)}), 202
+
+
+# enable a listing comment by setting active to one - take JSON from client
+@app.route('/listing/comment/enable', methods=['POST'])
+def enable_comment_rating():
+    try:
+        data = {'comment_rating_id': request.json['id']}
+    except:
+        return jsonify({'expecting': {'id': 'int'}}), 404
+    return jsonify({'result': app_request.unblock_comment_rating(data)}), 202
+
+	
+# add a new listing to the list of listings
+@app.route('/listing/add', methods=['POST'])
+def create_new_listing():
+    try:
+        data = {
+            'list_type_id': request.json['typeID'],
+            'county_id': request.json['countID'],
+            'name': request.json['name'],
+            'address': request.json['address'],
+            'latitude': request.json['latitude'],
+            'longitude': request.json['longitude'],
+            'text': request.json['text'],
+            'phone': request.json['phone'],
+            'email': request.json['email'],
+            'image': request.json['image']
+        }
+    except:
+        return jsonify({'expecting': {
+            'typeID': 'int',
+            'countID': 'int',
+            'name': 'string',
+            'address': 'string',
+            'latitude': 'string',
+            'longitude': 'string',
+            'text': 'string',
+            'phone': 'string',
+            'email': 'string',
+            'image': 'string'
+        }}), 404
+    return jsonify({'result': app_request.create_listing(data)}), 202
+
+	
+GET
+
+
+# gets all reported comments including comment and user
+@app.route('/comments/reported', methods=['GET'])
+def all_reported_comments():
+    return jsonify({'result': app_request.get_reported_comments()}), 202
+
+	
+	
+
